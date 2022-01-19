@@ -1,0 +1,352 @@
+﻿
+@{
+    ViewData["Title"] = "Index";
+}
+@section headFiles{
+
+    <link href="https://cdn.datatables.net/1.10.24/css/jquery.dataTables.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/buttons/1.7.0/css/buttons.dataTables.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+
+
+
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/4.4.0/bootbox.min.js"></script>
+
+
+    <style>
+        .red {
+            color: red;
+        }
+
+        .green {
+            color: green;
+        }
+    </style>
+
+    <script>
+        var LoadProduct;
+        $(document).ready(function () {
+
+            function binddropdown() {
+
+                $.ajax({
+                    url: '@Url.Action("GetCategoryList", "Product")',
+                    type: "POST",
+                    contentType: false, // Not to set any content header
+                    processData: false, // Not to process data
+                    data: "{}",
+                    success: function (response) {
+                        ddlProduct.empty().append('<option selected="selected" value="0">Select Category</option>');
+
+                        $.each(response, function () {
+                            ddlProduct.append($("<option></option>").val(this['value']).html(this['text']));
+                        });
+                    },
+                    error: function (err) {
+                        alert(err.statusText);
+                    }
+                });
+
+            }
+            binddropdown();
+
+
+            LoadProduct = function() {
+                var URL = '@Url.Action("GetProductList", "Product")';
+                $('#Product').dataTable({
+                    "processing": false,
+                    "serverSide": false,
+                    "bDestroy": true,
+                    "bJQueryUI": true,
+                    "pageLength": 20,
+                    "lengthMenu": [[10, 20, 50, -1], [10, 20, 50, "All"]],
+                    "sEmptyTable": "Loading data from server",
+                    "dom": 'lfrtip',
+                    "ajax": {
+                        'type': 'POST',
+                        'url': URL,
+                        "dataSrc": ""
+                    },
+                    "columns": [
+                        {
+                            "render": function (data, type, row, meta) {
+                                return (row[0])
+                            }
+                        },
+                        {
+                            "render": function (data, type, row, meta) {
+                                return (row[1])
+                            }
+                        },
+                        {
+                            "render": function (data, type, row, meta) {
+                                return (row[2])
+                            }
+                        },
+                        {
+                            "render": function (data, type, row, meta) {
+                                return (row[3])
+                            }
+                        },
+                        {
+                            "render": function (data, type, row, meta) {
+                                return (row[4])
+                            }
+                        },
+                        {
+                            "render": function (data, type, row, meta) {
+                                if (data == "True")
+                                    return "<span class='green'>" + data + "</span>";
+                                else
+                                    return "<span class='red'>" + data + "</span>";
+                            }
+                        },
+                        {
+                            "render": function (data, type, row, meta) {
+                                return (row[6])
+                            }
+                        },
+                        {
+                            "visible": false,
+                            "render": function (data, type, row, meta) {
+                                return (row[7])
+                            }
+                        },
+                        {
+                            "render": function (data, type, row, meta) {
+                                return '<button class="btn btn-primary" onclick="editdata(' + row[0] + ',\'' + row[1] + '\',\'' + row[2] + '\',\'' + row[3] + '\',\'' + row[4] + '\',\'' + row[5] + '\',\'' + row[7] +'\')"  title="Edit">Edit</button>' +
+                                    '<button class="btn btn-danger" title="Delete"  onclick="deletedata(' + row[0] + ')" style="margin-left: 10px;">Delete</button>';
+                            }
+                        }
+                    ]
+                });
+            }
+            LoadProduct();
+
+          //  $('#Product').DataTable();
+
+            var ddlProduct = $("#ddlProduct");
+
+            $("#btnupdate").click(function () {
+
+                var fdata = new FormData();
+                fdata.append("Product_ID", $("#hdnID").val());
+                fdata.append("Product_Name", $("#txtuppname").val());
+                fdata.append("Product_Category_ID", $("#ddlProduct option:selected").val());
+                fdata.append("Product_SKU", $("#txtupsku").val());
+                fdata.append("Product_Price", $("#txtuppprice").val());
+                fdata.append("Is_Active", $("input[name=RadioOptions]:checked").val());
+                fdata.append("Product_Description", $("#txtupdescription").val());
+
+                $.ajax({
+                    url: '@Url.Action("InUpProduct", "Product")',
+                    type: "POST",
+                    contentType: false, // Not to set any content header
+                    processData: false, // Not to process data
+                    data: fdata,
+                    success: function (result) {
+                        if (result == "1") {
+                            swal("Successfully Product Updated!", "", "success", {
+                                button: "Close",
+                            });
+                            //clear();
+                            LoadProduct();
+                            $('#mmd').modal('hide');
+                        }
+                        else {
+                            swal("Product Not Updated!", "", "error", {
+                                button: "Close",
+                            });
+                        }
+                    },
+                    error: function (err) {
+                        alert(err.statusText);
+                    }
+                });
+
+            });
+
+        });
+
+
+        function deletedata(ID) {
+            debugger;
+            bootbox.confirm({
+                title: "",
+                message: "Are you sure to delete this record.",
+                buttons: {
+                    cancel: {
+                        label: '<i class="fa fa-times"></i> Cancel'
+                    },
+                    confirm: {
+                        label: '<i class="fa fa-check"></i> Confirm'
+                    }
+                },
+                callback: function (result) {
+                    if (result == true) {
+                        var fdata = new FormData();
+                        fdata.append("ID", ID);
+                        $.ajax({
+                        url: '@Url.Action("DeleteProduct", "Product")',
+                        type: "POST",
+                        contentType: false, // Not to set any content header
+                        processData: false, // Not to process data
+                        data: fdata,
+                            success: function (response) {
+                                if (response == "1") {
+                                    swal("Successfully Product Deleted!", "", "success", {
+                                        button: "Close",
+                                    });
+                                    LoadProduct();
+                                }
+                                else {
+                                    swal("Product Not Deleted!", "", "error", {
+                                        button: "Close",
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        }
+        function editdata(ID,Name,Cate,SKU,Price,Active,Description)
+        {
+            $("#hdnID").val(ID);
+            $('#ddlProduct option').map(function () {
+                if ($(this).text() == Cate) return this;
+            }).attr('selected', 'selected');
+
+            $("#txtuppname").val(Name);
+            $("#txtuppprice").val(Price);
+            $("#txtupsku").val(SKU);
+            $("#txtupdescription").val(Description);
+
+
+
+            if (Active == "True") { $("input[name='RadioOptions'][value='True']").prop('checked', true); } else { $("input[name='RadioOptions'][value='False']").prop('checked', true); }
+            $("btnupdate").val("Update");
+            $('#mmd').modal();
+        }
+
+        function InsertData() {
+
+            $("#hdnID").val('0');
+            $('#ddlProduct').val(0);
+
+            $("#txtuppname").val('');
+            $("#txtuppprice").val('');
+            $("#txtupsku").val('');
+            $("#txtupdescription").val('');
+            $("btnupdate").val("Insert");
+            $('#mmd').modal();
+        }
+
+
+    </script>
+}
+
+<div class="row">
+    <div class="col-md-2">
+        <input type="submit" id="btninsert" value="Insert" onclick="InsertData()" class="btn btn-info" /><br />
+    </div>
+</div>
+
+<table id="Product" class="table table-striped table-bordered table-condensed dt-responsive nowrap bhaav-table" style="border-collapse: collapse; border-spacing: 0; width: 100%;">
+    <thead>
+        <tr>
+            <th>Product ID</th>
+            <th>Product Name</th>
+            <th>Product Category</th>
+            <th>Product SKU</th>
+            <th>Product Price</th>
+            <th>Product Active</th>
+            <th>Created Date</th>
+            <th style="display:none">Description</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody id="Product_body"></tbody>
+</table>
+
+<div id="mmd" class="modal fade" role="dialog">
+
+    <div class="modal-dialog modal-md">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h3>Product Information</h3>
+
+            </div>
+
+
+            <div class="modal-body">
+
+
+                <input type="hidden" id="hdnID" value="0" />
+
+                <div class="form-group">
+                    <select id="ddlProduct" class="select2 form-control">
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <input type="text" id="txtuppname" placeholder="Product Name" class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <input type="text" id="txtuppprice" placeholder="Product Price" class="form-control">
+                </div>
+
+                <div class="form-group">
+                    <input type="text" id="txtupsku" placeholder="Product SKU" class="form-control">
+                </div>
+                <div class="form-group">
+                    <input type="text" id="txtupdescription" placeholder="Product Description" class="form-control">
+                </div>
+
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input RadioStyle" type="radio" name="RadioOptions" value="True" checked>
+                    <label class="form-check-label" for="inlineRadio1">Yes</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input RadioStyle" type="radio" name="RadioOptions" value="False">
+                    <label class="form-check-label" for="inlineRadio2">No</label>
+                </div>
+
+
+            </div>
+
+            <div class="modal-footer">
+
+                <input type="submit" id="btnupdate" value="Update" class="btn btn-primary">
+
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+
+            </div>
+
+
+        </div>
+    </div>
+
+</div>
+
+
+@section FooterFiles{
+    <!-- <script src="https://code.jquery.com/jquery-3.5.1.js"></script>-->
+    <script src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+
+    <script src="https://cdn.datatables.net/buttons/1.7.0/js/dataTables.buttons.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/1.7.0/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/1.7.0/js/buttons.print.min.js"></script>
+}
