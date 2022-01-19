@@ -1,2 +1,2 @@
 # Net-Core-Demo
-.Net core demo with repository structure 
+.Net core demo with new repository structure. 
